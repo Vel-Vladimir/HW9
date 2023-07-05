@@ -11,8 +11,7 @@ def input_error(func):
             if len(command) == 0:
                 return "Enter command, please."
             return "Give me name and phone, please"
-        except ValueError:
-            pass
+
     return inner
 
 def launch_bot():
@@ -20,11 +19,13 @@ def launch_bot():
     while True:
         user_command = input()
         parsed_command = parser(user_command)
-
         result = handler(parsed_command)
         if result is not None:
 
             if type(result) == dict:
+                if len(result) == 0:
+                    print("List of contact is empty")
+                    continue
                 for k in result:
                     print(k, ": ", result[k], sep="")
             elif type(result) == str:
@@ -37,39 +38,54 @@ def parser(string: str) -> list:
     res = string.split()
     return res
 
+def hello() -> str:
+    return "How can I help you?"
+
+def goodbye() -> str:
+    return "Good bye!"
+
+def show_all() -> dict:
+    return contacts
 
 @input_error
-def handler(command: list):
+def change(command: list):
+    if command[1] not in contacts:
+        return "You try to change a contact that is not in the contact list"
+    contacts[command[1]] = command[2]
+
+@input_error
+def phone(command: list) -> str:
+    return contacts[command[1]]
+
+@input_error
+def add(command: list) -> None:
+    contacts[command[1]] = command[2]
+
+@input_error
+def handler(parsed_command: list):
     """
     command[0] -> name of command
     command[1] -> name of person
     command[2] -> telephone number of person
 
     """
+    parsed_command[0] = parsed_command[0].lower()
+    command = parsed_command[0]
+    if command in GOODBYE:
+        return HANDLERS[GOODBYE]()
 
-    command[0] = command[0].lower()
-
-    if command[0] == "hello":
-        return "How can I help you?"
-    elif command[0] == "show":
-        return contacts
-    elif command[0] in GOODBYE:
-        return "Good bye!"
-    elif command[0] == "add":
-        contacts[command[1]] = command[2]
-    elif command[0] == "change":
-        if command[1] not in contacts:
-            return "You try to change a contact that is not in the contact list"
-        contacts[command[1]] = command[2]
-    elif command[0] == "phone":
-        return contacts[command[1]]
-    else:
+    if command not in HANDLERS:
         return "Unknown command.\nEnter a command, please (add, change, phone, show all)."
 
+    if command in ("hello", "show"):
+        return HANDLERS[command]()
+
+    return HANDLERS[command](parsed_command)
+
+HANDLERS = {"hello": hello, "add": add, "change": change, "phone": phone, "show": show_all, GOODBYE: goodbye}
 
 def main():
     launch_bot()
-
 
 if __name__ == '__main__':
     main()
